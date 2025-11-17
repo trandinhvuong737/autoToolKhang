@@ -1,16 +1,425 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
+  <meta charset="UTF-8">
   <title>Batch Processor</title>
   <style>
-    body { width: 300px; padding: 10px; }
+    :root {
+      --bg: #f7fafd;
+      --card: #fff;
+      --card-2: #f2f6fa;
+      --text: #1a2330;
+      --muted: #7a8599;
+      --primary: #2563eb;
+      --primary-600: #1746a2;
+      --border: #e3e8ef;
+      --success: #22c55e;
+      --warning: #f59e0b;
+    }
+    html, body { margin: 0; padding: 0; }
+    body {
+      width: 340px;
+      padding: 18px 12px 16px 12px;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      letter-spacing: 0.1px;
+    }
+    .container { display: flex; flex-direction: column; gap: 16px; }
+    .title { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: .2px; color: var(--primary-600); }
+    .hint { margin: 0; color: var(--muted); font-size: 13px; }
+
+    /* Button */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      border: none; border-radius: 12px; cursor: pointer;
+      min-height: 44px; padding: 0 18px; font-weight: 700; font-size: 15px;
+      letter-spacing: .2px; background: var(--primary); color: #fff;
+      box-shadow: 0 2px 8px 0 rgba(37,99,235,0.07);
+      transition: background .15s, box-shadow .15s, transform .05s, opacity .15s;
+      user-select: none;
+    }
+    .btn:active:not(:disabled) { transform: translateY(1px); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-600); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    #stopButton {
+      background: #ef4444;
+      color: #fff;
+      margin-left: 8px;
+    }
+    #stopButton:hover:not(:disabled) { background: #b91c1c; }
+    #stopButton:active:not(:disabled) { background: #991b1b; }
+
+    /* Status */
+    .status {
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--card-2);
+      color: var(--muted); font-size: 14px;
+      margin-top: 2px;
+    }
+    .status-ok { color: var(--success); }
+    .status-warn { color: var(--warning); }
+
+    /* Details (config card) */
+    details.config { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--card-2); }
+    details.config > summary {
+      list-style: none; cursor: pointer; padding: 14px 16px; font-weight: 700; color: var(--primary-600);
+      display: flex; align-items: center; gap: 8px; position: relative; font-size: 15px;
+    }
+    details.config > summary::-webkit-details-marker { display: none; }
+    details.config > summary::after {
+      content: '\25BC'; font-size: 12px; color: var(--muted); margin-left: auto; transition: transform .15s;
+    }
+    details.config[open] > summary::after { transform: rotate(180deg); }
+    .config-card { padding: 14px 16px 16px; border-top: 1px solid var(--border); }
+    .config-form { display: flex; flex-direction: column; gap: 14px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+    /* Fields */
+    label { display: flex; flex-direction: column; gap: 6px; color: var(--text); font-weight: 600; font-size: 14px; }
+    label small { font-weight: 400; color: var(--muted); margin-top: -2px; }
+    input[type="text"], input[type="email"], input[type="number"], input[type="date"], textarea, select {
+      width: 100%; box-sizing: border-box; border-radius: 10px; border: 1.5px solid var(--border);
+      background: #fff; color: var(--text); padding: 10px 12px; outline: none;
+      transition: border-color .15s, box-shadow .15s; font-size: 15px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+    input[type="date"]::-webkit-input-placeholder { color: #b6c2d6; }
+    input[type="date"]::-moz-placeholder { color: #b6c2d6; }
+    input[type="date"]:-ms-input-placeholder { color: #b6c2d6; }
+    input[type="date"]::placeholder { color: #b6c2d6; }
+    input[type="date"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+    }
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%237a8599'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 18px;
+      padding-right: 38px;
+    }
+    input::placeholder, textarea::placeholder { color: #b6c2d6; }
+    textarea { resize: vertical; min-height: 64px; }
+    input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.10); }
+
+    /* Radio groups */
+    .radio-group { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+    .radio-group > label { flex-direction: row; align-items: center; gap: 8px; font-weight: 500; font-size: 14px; }
+    .radio-title { font-weight: 700; margin: 8px 0 2px; font-size: 14px; }
+
+    /* Subsection */
+    .subsection-title {
+      font-weight: 800;
+      margin: 16px 0 10px;
+      color: var(--primary);
+      font-size: 15px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .subsection-title:first-child { margin-top: 0; }
+    /* Misc */
+    #startButton { background: var(--primary); }
+    #startButton:hover:not(:disabled) { background: var(--primary-600); }
+    #startButton:active:not(:disabled) { background: #0e2e6e; }
+    #failedLinksContainer details.config > summary { color: #ef4444; }
+    #failedLinksContainer .btn { background: #fff0f0; color: #ef4444; border: 1px solid #ef4444; }
+    #failedLinksContainer .btn:hover { background: #ffeaea; }
   </style>
+  
 </head>
 <body>
-  <h3>Tự động hóa theo đợt</h3>
-  <p>Đảm bảo bạn đang ở trên trang có danh sách liên kết.</p>
-  <button id="startButton">1. TRÍCH XUẤT Liên Kết</button>
-  <p id="status">Trạng thái: Đang chờ...</p>
+  <div class="container">
+    <h3 class="title">Đồ Chơi</h3>
+    <p class="hint">Đảm bảo bạn đang ở trên trang có danh sách liên kết.</p>
+    
+    <!-- Scan mode selection -->
+    <label style="margin-bottom: 8px;">
+      <span style="font-weight: 600; color: var(--text); font-size: 12px;">Chế độ quét liên kết</span>
+      <small style="color: var(--muted); display: block; margin-top: 4px; margin-bottom: 6px;">
+        Chọn "Phân trang" nếu danh sách link nằm trên nhiều trang.
+      </small>
+      <select id="scanModeInput" style="font-weight: 600;">
+        <option value="normal">Bình thường (1 trang)</option>
+        <option value="paginated">Phân trang (nhiều trang)</option>
+      </select>
+    </label>
+    <label style="margin-bottom: 8px;">
+      <span style="font-weight: 600; color: var(--text); font-size: 12px;">Số lượng tab mở cùng lúc</span>
+      <small style="color: var(--muted); display: block; margin-top: 4px; margin-bottom: 6px;">
+        💡 Có thể tùy chỉnh từ 1-50 tabs.
+      </small>
+      <input id="batchSizeInput" type="number" min="1" max="50" value="10" placeholder="10" style="font-weight: 600;">
+    </label>
+    
+    <label style="margin-bottom: 8px;">
+      <span style="font-weight: 600; color: var(--text); font-size: 12px;">Thời gian chờ tối đa mỗi tab (giây)</span>
+      <small style="color: var(--muted); display: block; margin-top: 4px; margin-bottom: 6px;">
+        ⏱️ Tab quá thời gian này sẽ bị đóng và thử lại.
+      </small>
+      <input id="tabTimeoutInput" type="number" min="60" max="600" step="30" value="180" placeholder="180" style="font-weight: 600;">
+    </label>
+    
+    <label style="margin-bottom: 8px;">
+      <span style="font-weight: 600; color: var(--text); font-size: 12px;">Thời gian chờ CAPTCHA giải (giây)</span>
+      <small style="color: var(--muted); display: block; margin-top: 4px; margin-bottom: 6px;">
+        🤖 Chờ extension 2Captcha giải CAPTCHA.
+      </small>
+      <input id="captchaTimeoutInput" type="number" min="30" max="300" step="10" value="120" placeholder="120" style="font-weight: 600;">
+    </label>
+    
+    <!-- Custom links input -->
+    <details class="config" style="margin-bottom: 8px;">
+      <summary style="color: var(--primary); font-size: 13px;">🔗 Danh sách links tùy chỉnh (tùy chọn)</summary>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--border);">
+        <label style="margin-bottom: 8px;">
+          <span style="font-weight: 600; color: var(--text); font-size: 12px;">Nhập danh sách links (mỗi link 1 dòng)</span>
+          <small style="color: var(--muted); display: block; margin-top: 4px; margin-bottom: 6px;">
+            💡 <strong>Để trống</strong> = trích xuất links từ trang hiện tại<br>
+            📝 <strong>Có links</strong> = chỉ chạy với list này (bỏ qua trích xuất)
+          </small>
+          <textarea id="customLinks" rows="6" placeholder="https://example.com/page1&#10;https://example.com/page2&#10;https://example.com/page3" style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.6;"></textarea>
+        </label>
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button id="clearLinksBtn" class="btn" style="flex: 1; background: var(--card-2); border: 1px solid var(--border); font-size: 11px;">🗑️ Xóa</button>
+          <button id="countLinksBtn" class="btn" style="flex: 1; background: var(--card-2); border: 1px solid var(--border); font-size: 11px;">📊 Đếm</button>
+        </div>
+        <div id="linkCount" style="margin-top: 8px; padding: 6px 10px; background: var(--card); border-radius: 6px; font-size: 11px; color: var(--muted); text-align: center; display: none;"></div>
+      </div>
+    </details>
+    
+    <!-- Failed links display -->
+    <div id="failedLinksContainer" style="display: none; margin-top: 8px;">
+      <details class="config">
+        <summary style="color: #dc3545; font-weight: 600;">❌ Liên kết thất bại (<span id="failedCount">0</span>)</summary>
+        <div style="background: #1a1212; border: 1px solid #4a2020; border-radius: 8px; padding: 10px; margin-top: 8px; max-height: 200px; overflow-y: auto;">
+          <ul id="failedLinksList" style="margin: 0; padding: 0 0 0 20px; font-size: 11px; color: #ff9999; line-height: 1.8;">
+            <!-- Failed links will be inserted here -->
+          </ul>
+          <button id="copyFailedLinks" class="btn" style="width: 100%; margin-top: 8px; background: #4a2020; color: #ff9999; font-size: 11px;">📋 Copy danh sách</button>
+        </div>
+      </details>
+    </div>
+    
+    <details class="config" style="margin-top:4px;">
+      <summary>Cấu hình điền form (tùy chọn)</summary>
+      <div class="config-card">
+        <div style="background: #1a2847; border: 1px solid #2d4573; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;">
+          <div style="font-size: 12px; color: #7e8ba8; line-height: 1.5;">
+            💡 <strong style="color: #9aa4c1;">Lưu ý:</strong> Các trường quốc gia có thể nhập:
+            <ul style="margin: 6px 0 0 20px; padding: 0; font-size: 11px;">
+              <li>Mã 2 ký tự: <code style="background: #0b1226; padding: 2px 6px; border-radius: 4px; color: #6eb5ff;">VN</code>, <code style="background: #0b1226; padding: 2px 6px; border-radius: 4px; color: #6eb5ff;">US</code>, <code style="background: #0b1226; padding: 2px 6px; border-radius: 4px; color: #6eb5ff;">SG</code></li>
+              <li>Tên đầy đủ: <code style="background: #0b1226; padding: 2px 6px; border-radius: 4px; color: #6eb5ff;">Vietnam</code>, <code style="background: #0b1226; padding: 2px 6px; border-radius: 4px; color: #6eb5ff;">United States</code></li>
+            </ul>
+          </div>
+        </div>
+        <div class="config-form">
+      <!-- <div>
+        <div class="radio-title">Chế độ phát triển</div>
+        <div class="radio-group">
+          <label><input type="checkbox" id="cfg_devMode"> DEV mode (mở 1 tab, không tự đóng)</label>
+        </div>
+      </div> -->
+      <!-- Thông tin cơ bản -->
+      <div class="subsection-title">📋 Thông tin cơ bản</div>
+      <label>
+        Tên công ty khách hàng cuối *
+        <input id="cfg_endCustomerCompanyName" type="text" placeholder="ACME Co" />
+      </label>
+      
+      <hr class="divider" />
+      
+      <!-- Thông tin tài khoản & kinh doanh -->
+      <div class="subsection-title">💼 Thông tin tài khoản</div>
+      <label>
+        Website
+        <input id="cfg_website" type="text" placeholder="https://example.com" />
+      </label>
+      <label>
+        Từ khóa mẫu *
+        <input id="cfg_sampleKeywords" type="text" placeholder="quần áo, thời trang" />
+      </label>
+      
+      <div>
+        <div class="radio-title">Số lượng tài khoản *</div>
+        <div class="radio-group">
+          <label><input type="radio" name="cfg_accountCount" value="single_account" id="cfg_single"> Một tài khoản</label>
+          <label><input type="radio" name="cfg_accountCount" value="multiple_non_mcc" id="cfg_multi"> Nhiều (không MCC)</label>
+          <label><input type="radio" name="cfg_accountCount" value="mcc_account" id="cfg_mcc"> Tôi là MCC</label>
+        </div>
+      </div>
+      
+      <div>
+        <div class="radio-title">Bạn đang quảng cáo cho? *</div>
+        <div class="radio-group">
+          <label><input type="radio" name="cfg_ownerOrEmp" value="yes" id="cfg_owner_yes"> Doanh nghiệp riêng</label>
+          <label><input type="radio" name="cfg_ownerOrEmp" value="no" id="cfg_owner_no"> Không phải</label>
+          <label><input type="radio" name="cfg_ownerOrEmp" value="account_manager" id="cfg_manager"> Quản lý cho khách</label>
+          <label><input type="radio" name="cfg_ownerOrEmp" value="affiliate" id="cfg_affiliate"> Đơn vị liên kết</label>
+          <label><input type="radio" name="cfg_ownerOrEmp" value="other" id="cfg_other"> Khác</label>
+        </div>
+      </div>
+      
+      <label>
+        Nếu chọn "Khác", mô tả
+        <input id="cfg_ownerOrEmpOther" type="text" placeholder="VD: Đối tác pháp lý" />
+      </label>
+      
+      <label>
+        Ai thanh toán cho tài khoản? *
+        <textarea id="cfg_whoPays" rows="2" placeholder="VD: Khách hàng thanh toán trực tiếp"></textarea>
+      </label>
+      
+      <label>
+        Mô tả doanh nghiệp *
+        <textarea id="cfg_businessDesc" rows="2" placeholder="VD: Chúng tôi bán quần áo trực tuyến"></textarea>
+      </label>
+      
+      <label>
+        Thông tin quan hệ đại lý-khách hàng
+        <textarea id="cfg_clientAgencyRelationship" rows="2" placeholder="Mô tả mối quan hệ với khách hàng"></textarea>
+      </label>
+      
+      <label>
+        Thông tin chủ sở hữu miền
+        <textarea id="cfg_domainOwnership" rows="2" placeholder="Ai sở hữu các miền đang quảng cáo"></textarea>
+      </label>
+      
+      <hr class="divider" />
+      
+      <!-- Thông tin thanh toán -->
+      <div class="subsection-title">💳 Thông tin thanh toán</div>
+      <label>
+        Địa chỉ đường phố *
+        <input id="cfg_billingStreet" type="text" placeholder="123 Đường ABC" />
+      </label>
+      <label>
+        Mã bưu chính *
+        <input id="cfg_billingZip" type="text" placeholder="700000" />
+      </label>
+      <label>
+        Thành phố *
+        <input id="cfg_billingTown" type="text" placeholder="Hồ Chí Minh" />
+      </label>
+      <label>
+        Quốc gia thanh toán *
+        <input id="cfg_billingCountryCode" type="text" placeholder="VN hoặc Vietnam" />
+        <small style="color: #666; font-size: 11px;">💡 Nhập mã 2 ký tự (VN) hoặc tên đầy đủ (Vietnam)</small>
+      </label>
+      
+      <label>
+        Hình thức thanh toán *
+        <select id="cfg_paymentOption">
+          <option value="">-- Chọn --</option>
+          <option value="payment_credit">Thẻ tín dụng/ghi nợ</option>
+          <option value="payment_invoicing">Lập hóa đơn</option>
+          <option value="payment_directdebit">Ghi nợ trực tiếp</option>
+          <option value="payment_banktrans">Chuyển khoản ngân hàng</option>
+          <option value="payment_grants">Google Ad Grants</option>
+          <option value="payment_other">Khác</option>
+        </select>
+      </label>
+      
+      <label>
+        Ngày thanh toán gần nhất
+        <input id="cfg_lastPaymentDate" type="date" placeholder="mm/dd/yyyy" />
+      </label>
+      
+      <label>
+        Quốc gia phục vụ *
+        <input id="cfg_countriesBusinessServe" type="text" placeholder="VN hoặc Vietnam" />
+        <small style="color: #666; font-size: 11px;">💡 Nhập mã 2 ký tự (VN) hoặc tên đầy đủ (Vietnam)</small>
+      </label>
+      
+      <hr class="divider" />
+      
+      <!-- Liên hệ -->
+      <div class="subsection-title">📞 Thông tin liên lạc</div>
+      <div>
+        <div class="radio-title">Hình thức liên hệ ưu tiên *</div>
+        <div class="radio-group">
+          <label><input type="radio" name="cfg_disconnectedPref" value="prefer_either" id="cfg_pref_either" checked> Gọi hoặc email</label>
+          <label><input type="radio" name="cfg_disconnectedPref" value="prefer_phone" id="cfg_pref_phone"> Gọi điện</label>
+          <label><input type="radio" name="cfg_disconnectedPref" value="prefer_email" id="cfg_pref_email"> Gửi email</label>
+        </div>
+      </div>
+      
+      <label>
+        Mã quốc gia điện thoại
+        <input id="cfg_phoneCountry" type="text" placeholder="VN" />
+        <small style="color: #666; font-size: 11px;">💡 Nhập mã 2 ký tự (VN, US, etc.)</small>
+      </label>
+      <label>
+        Số điện thoại
+        <input id="cfg_phoneNumber" type="text" placeholder="0912345678" />
+      </label>
+      
+      <div>
+        <div class="radio-title">Loại điện thoại</div>
+        <div class="radio-group">
+          <label><input type="radio" name="cfg_phoneType" value="1" id="cfg_phoneType_mobile"> Di động</label>
+          <label><input type="radio" name="cfg_phoneType" value="2" id="cfg_phoneType_landline"> Cố định</label>
+        </div>
+      </div>
+      
+      <label>
+        Thời gian thuận tiện gọi lại
+        <input id="cfg_preferredTime" type="text" placeholder="09:00-17:00" />
+      </label>
+      
+      <hr class="divider" />
+      
+      <!-- ATO/Hijacking -->
+      <div class="subsection-title">🔒 Bảo mật tài khoản</div>
+      <div>
+        <div class="radio-title">Liên quan ATO/Hijacking?</div>
+        <div class="radio-group">
+          <label><input type="radio" name="cfg_atoOrHijacking" value="yes" id="cfg_ato_yes"> Có</label>
+          <label><input type="radio" name="cfg_atoOrHijacking" value="no" id="cfg_ato_no"> Không</label>
+        </div>
+      </div>
+      <label>
+        Mô tả sự cố (nếu có ATO)
+        <select id="cfg_incidentDescription">
+          <option value="">-- Chọn --</option>
+          <option value="suspect_account_hijacked">Nghi ngờ bị xâm nhập</option>
+          <option value="unauthorized_changes_activity">Phát hiện thay đổi trái phép</option>
+          <option value="account_suspended">Tài khoản bị tạm ngưng do ATO</option>
+          <option value="dispute_unauthorized_charges">Kháng nghị phí trái phép</option>
+          <option value="general_questions">Câu hỏi về sự cố bảo mật</option>
+        </select>
+      </label>
+      <label>
+        Email quản trị viên *
+        <input id="cfg_adminEmail" type="email" placeholder="admin@example.com" />
+      </label>
+      <label>
+        Ngày xác nhận chiếm đoạt
+        <input id="cfg_accountCompromisedDate" type="date" placeholder="mm/dd/yyyy" />
+      </label>
+    
+      <hr class="divider" />
+      <div class="subsection-title">📝 Tóm tắt vấn đề</div>
+      <label>
+        Tóm tắt vấn đề * (tối đa 2000 ký tự)
+        <textarea id="cfg_issueSummary" rows="4" maxlength="2000" placeholder="Mô tả chi tiết vấn đề..."></textarea>
+      </label>
+      
+      <hr class="divider" />
+        </div>
+      </div>
+    </details>
+    <div style="display: flex; gap: 8px;">
+      <button id="startButton" class="btn btn-primary" style="flex: 1;">▶️ BẮT ĐẦU</button>
+      <button id="stopButton" class="btn" style="flex: 0 0 auto; background: #dc3545; border-color: #dc3545; display: none;">⏹️ DỪNG</button>
+    </div>
+    <div id="status" class="status">Trạng thái: Đang chờ...</div>
+    <!-- <button type="button" id="saveConfigBtn" class="btn btn-primary" style="margin-top:8px;">💾 Lưu cấu hình</button> -->
+  </div>
   <script src="popup.js"></script>
-</body>
+ </body>
 </html>

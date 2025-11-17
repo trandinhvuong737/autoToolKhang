@@ -1,0 +1,51 @@
+# Chrome Extension - .gitignore
+
+# Build artifacts
+dist/
+build/
+*.crx
+*.pem
+*.zip
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies (if using npm/yarn later)
+node_modules/
+package-lock.json
+yarn.lock
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# User data / testing
+test-data/
+screenshots/
+*.local.*
+
+# Sensitive data
+secrets/
+*.key
+*.env
+.env.local
+
+# Chrome Extension specific
+# Uncommit if you want to ignore the key file
+# key.pem

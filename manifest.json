@@ -1,21 +1,35 @@
 {
   "manifest_version": 3,
   "name": "Link Batch Processor",
-  "version": "1.0",
+  "version": "1.0.0",
+  "description": "Tự động xử lý hàng loạt liên kết với khả năng điền form thông minh",
   "permissions": [
-    "tabs", 
-    "storage", 
+    "tabs",
+    "storage",
     "scripting"
   ],
   "host_permissions": [
-    "https://*/*", 
+    "https://*/*",
     "http://*/*"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "icons/icon16.png"
+    "default_icon": {
+      "16": "icon/qr-code-scan.png",
+      "48": "icon/qr-code-scan.png",
+      "128": "icon/qr-code-scan.png"
+    }
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icon/qr-code-scan.png",
+    "48": "icon/qr-code-scan.png",
+    "128": "icon/qr-code-scan.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
   }
 }
